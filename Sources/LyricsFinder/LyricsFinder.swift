@@ -7,52 +7,38 @@
 
 import Foundation
 
-public struct LyricsFinder {
-    private init() {}
+public class LyricsFinder {
     
     public static var preferredLocale = Locale.current
-    
-    public static var saveLyrics = false
     
     public static var provideAttribution = true
     
     private static var dataTask: URLSessionTask? {
-        willSet {
-            dataTask?.cancel()
-        } didSet {
-            dataTask?.resume()
-        }
+        willSet { dataTask?.cancel() }
+        didSet { dataTask?.resume() }
     }
     
-    private static var availableProviders: [LyricsFinderProtocol] {
-        return [
+    private static var availableProviders: [LyricsFinderProtocol] {[
             AZLyricsFinder(),
             MetroLyricsFinder(),
             TekstowoFinder()
-        ]
-    }
+    ]}
     
-    public static func cancelCurrentSearchTask() {
+    public class func cancelCurrentSearchTask() {
         dataTask?.cancel()
     }
     
-    public static func fetchLyrics(song title: String, artist: String, completion: @escaping (NSAttributedString?) -> Void) {
-        if saveLyrics, let lyrics = readLyrics(song: title, artist: artist) {
-            completion(lyrics)
-            return
-        }
-        
+    public class func fetchLyrics(song title: String, artist: String, completion: @escaping (NSAttributedString?) -> Void) {
         let providers = availableProviders
-            .shuffled()
             .sorted(by: {
-            if $0.localeIdentifier == preferredLocale.languageCode {
-                return true
-            }
-            if $1.localeIdentifier == preferredLocale.languageCode {
+                if $0.localeIdentifier == preferredLocale.languageCode {
+                    return true
+                }
+                if $1.localeIdentifier == preferredLocale.languageCode {
+                    return false
+                }
                 return false
-            }
-            return false
-        })
+            })
         
         func fetchLyrics(withProviderAtIndex index: Int) {
             if index >= providers.count {
@@ -72,7 +58,6 @@ public struct LyricsFinder {
                 } else {
                     attributedLyrics = NSAttributedString(string: lyrics)
                 }
-                saveLyrics(song: title, artist: artist, lyrics: attributedLyrics)
                 completion(attributedLyrics)
             })
         }
@@ -80,7 +65,14 @@ public struct LyricsFinder {
         fetchLyrics(withProviderAtIndex: 0)
     }
     
-    private static func fetchLyrics(song title: String, artist: String, usingProvider provider: LyricsFinderProtocol, completion: @escaping (URL, String?) -> Void) {
+    @available(*, unavailable)
+    init() {}
+    
+}
+    
+private extension LyricsFinder {
+    
+    class func fetchLyrics(song title: String, artist: String, usingProvider provider: LyricsFinderProtocol, completion: @escaping (URL, String?) -> Void) {
         guard let url = provider.createUrl(song: title, artist: artist) else {
             return
         }
@@ -106,50 +98,5 @@ public struct LyricsFinder {
             completion(url, lyrics)
         }
     }
-}
-
-private extension LyricsFinder {
-    private static var userDefaultsDictionaryKey: String {
-        return "LYRICS_FINDER_SAVED_RESULTS"
-    }
     
-    private static var defaults: UserDefaults {
-        return .standard
-    }
-    
-    private static func generateDictionaryKey(song title: String, artist: String) -> String {
-        let fixedTitle = title
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .removingAllNonAlphanumerics()
-            .lowercased()
-        
-        let fixedArtist = artist
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .removingAllNonAlphanumerics()
-            .lowercased()
-        
-        return "\(fixedArtist)-\(fixedTitle)"
-    }
-    
-    static func readLyrics(song title: String, artist: String) -> NSAttributedString? {
-        let key = generateDictionaryKey(song: title, artist: artist)
-        guard let dictionary = UserDefaults.standard.dictionary(forKey: userDefaultsDictionaryKey) as? [String: Data],
-              let data = dictionary[key] else {
-            return nil
-        }
-        
-        //return NSAttributedString(data: data, options: [:], documentAttributes: nil)
-        return try? NSAttributedString(data: data, documentType: .rtf)
-    }
-    
-    static func saveLyrics(song title: String, artist: String, lyrics: NSAttributedString) {
-        let data = lyrics.data(.rtf)
-        
-        var dictionary = defaults.dictionary(forKey: userDefaultsDictionaryKey) as? [String: Data] ?? [:]
-        
-        let key = generateDictionaryKey(song: title, artist: artist)
-        dictionary.updateValue(data, forKey: key)
-        
-        defaults.set(dictionary, forKey: userDefaultsDictionaryKey)
-    }
 }
