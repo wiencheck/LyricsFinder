@@ -9,6 +9,13 @@ import Foundation
 import UIKit
 
 extension String {
+    
+    var normalized: String {
+        self.folding(options: .diacriticInsensitive, locale: .current)
+            .removingAllNonAlphanumerics()
+            .lowercased()
+    }
+    
     func removingAllNonAlphanumerics() -> String {
         let legalCharacters = CharacterSet.alphanumerics
         return components(separatedBy: legalCharacters.inverted).joined()
@@ -40,4 +47,5 @@ extension String {
         text.append(attributedText)
         return text
     }
+    
 }

@@ -7,8 +7,8 @@
 
 import Foundation
 
-protocol LyricsFinderProtocol {
-    func createUrl(song title: String, artist: String) -> URL?
+public protocol LyricsFinderProtocol {
+    func makeURL(for song: SongInfo) -> URL
     func extractLyrics(fromHTML html: String) -> String?
     
     var localeIdentifier: String { get }

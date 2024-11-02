@@ -13,26 +13,19 @@ public struct AZLyricsFinder: LyricsFinderProtocol {
         return "en"
     }
     
-    var domainName: String {
+    public var domainName: String {
         return "AZLyrics"
     }
     
-    private func fixParameter(_ parameter: String) -> String {
-        return parameter
-            .folding(options: .diacriticInsensitive, locale: .current)
-            .removingAllNonAlphanumerics()
-            .lowercased()
-    }
-    
-    public func createUrl(song title: String, artist: String) -> URL? {
+    public func makeURL(for song: SongInfo) -> URL {
         var components = URLComponents()
         components.scheme = "https"
         components.host = "azlyrics.com"
-        components.path = "/lyrics/\(fixParameter(artist))/\(fixParameter(title))"
+        components.path = "/lyrics/\(fixedParameter(song.artist))/\(fixedParameter(song.title))"
         
-        return components.url?.appendingPathExtension("html")
+        return components.url!.appendingPathExtension("html")
     }
-    
+        
     public func extractLyrics(fromHTML html: String) -> String? {
         do {
             // Replacing <br> tag manually because Soup would just remove them and all text would be missing spaces.
@@ -57,4 +50,12 @@ public struct AZLyricsFinder: LyricsFinderProtocol {
         }
         return nil
     }
+    
+    private func fixedParameter(_ parameter: String) -> String {
+        return parameter
+            .folding(options: .diacriticInsensitive, locale: .current)
+            .removingAllNonAlphanumerics()
+            .lowercased()
+    }
+    
 }

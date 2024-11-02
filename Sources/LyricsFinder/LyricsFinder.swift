@@ -21,11 +21,32 @@ public class LyricsFinder {
     private static var availableProviders: [LyricsFinderProtocol] {[
             AZLyricsFinder(),
             MetroLyricsFinder(),
-            TekstowoFinder()
+            GeniusLyricsFinder()
     ]}
     
     public class func cancelCurrentSearchTask() {
         dataTask?.cancel()
+    }
+    
+    public class func searchLyricsForSong(title: String) async -> String? {
+        nil
+    }
+    
+    public class func searchLyrics(with song: SongInfo, using provider: any LyricsFinderProtocol) async throws -> String? {
+        let url = provider.makeURL(for: song)
+        let request = URLRequest(url: url, timeoutInterval: 1)
+        
+        let result = try await URLSession.shared.data(for: request)
+        guard let httpResponse = result.1 as? HTTPURLResponse,
+            httpResponse.statusCode == 200 else {
+            return nil
+        }
+        guard let htmlString = String(data: result.0, encoding: .utf8) else {
+            return nil
+        }
+        let lyrics = provider.extractLyrics(fromHTML: htmlString)
+        
+        return lyrics
     }
     
     public class func fetchLyrics(song title: String, artist: String, completion: @escaping (NSAttributedString?) -> Void) {
@@ -65,6 +86,14 @@ public class LyricsFinder {
         fetchLyrics(withProviderAtIndex: 0)
     }
     
+    public class func fetchLyrics(song title: String, artist: String) async -> NSAttributedString? {
+        await withCheckedContinuation { continuation in
+            self.fetchLyrics(song: title, artist: artist) { attr in
+                continuation.resume(returning: attr)
+            }
+        }
+    }
+    
     @available(*, unavailable)
     init() {}
     
@@ -73,30 +102,30 @@ public class LyricsFinder {
 private extension LyricsFinder {
     
     class func fetchLyrics(song title: String, artist: String, usingProvider provider: LyricsFinderProtocol, completion: @escaping (URL, String?) -> Void) {
-        guard let url = provider.createUrl(song: title, artist: artist) else {
-            return
-        }
-        let request = URLRequest(url: url, timeoutInterval: 1)
-        
-        dataTask = URLSession.shared.dataTask(with: request) { data, response, error in
-            if let error = error {
-                completion(url, nil)
-                print(error)
-                return
-            }
-            guard let httpResponse = response as? HTTPURLResponse,
-                httpResponse.statusCode == 200 else {
-                completion(url, nil)
-                return
-            }
-            guard let data = data,
-                  let htmlString = String(data: data, encoding: .utf8) else {
-                completion(url, nil)
-                return
-            }
-            let lyrics = provider.extractLyrics(fromHTML: htmlString)
-            completion(url, lyrics)
-        }
+//        guard let url = provider.createUrl(song: title, artist: artist) else {
+//            return
+//        }
+//        let request = URLRequest(url: url, timeoutInterval: 1)
+//        
+//        dataTask = URLSession.shared.dataTask(with: request) { data, response, error in
+//            if let error = error {
+//                completion(url, nil)
+//                print(error)
+//                return
+//            }
+//            guard let httpResponse = response as? HTTPURLResponse,
+//                httpResponse.statusCode == 200 else {
+//                completion(url, nil)
+//                return
+//            }
+//            guard let data = data,
+//                  let htmlString = String(data: data, encoding: .utf8) else {
+//                completion(url, nil)
+//                return
+//            }
+//            let lyrics = provider.extractLyrics(fromHTML: htmlString)
+//            completion(url, lyrics)
+//        }
     }
     
 }

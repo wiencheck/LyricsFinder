@@ -13,7 +13,7 @@ public struct MetroLyricsFinder: LyricsFinderProtocol {
         return "en"
     }
     
-    var domainName: String {
+    public var domainName: String {
         return "MetroLyrics"
     }
     
@@ -24,15 +24,15 @@ public struct MetroLyricsFinder: LyricsFinderProtocol {
             .lowercased()
     }
     
-    public func createUrl(song title: String, artist: String) -> URL? {
+    public func makeURL(for song: SongInfo) -> URL {
         var components = URLComponents()
         components.scheme = "https"
         components.host = "metrolyrics.com"
-        components.path = "/\(fixParameter(title))-lyrics-\(fixParameter(artist))"
+        components.path = "/\(fixParameter(song.title))-lyrics-\(fixParameter(song.artist))"
         
-        return components.url
+        return components.url!
     }
-    
+        
     public func extractLyrics(fromHTML html: String) -> String? {
         do {
             // Replacing <br> tag manually because Soup would just remove them and all text would be missing spaces.
